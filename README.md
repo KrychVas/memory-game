@@ -14,6 +14,12 @@ No libraries, no frameworks, no build step — only the browser platform.
 The application is a set of static files, so it is published with GitHub Pages
 directly from the `memory-game` branch.
 
+## Screenshots
+
+| The board during a game | The start-of-game preview |
+| :---: | :---: |
+| <img src="src/assets/img/screenshot-board.png" width="330" alt="The board with all sixteen cards face down after four moves"> | <img src="src/assets/img/screenshot-preview.png" width="330" alt="All sixteen cards revealed at the start of a game"> |
+
 ## How the task criteria are met
 
 Points are the ones from the task description; the implementation of each item
@@ -105,10 +111,6 @@ immediately.
 ```
 memory-game/
 ├── index.html                    # empty <body>, only the module script
-├── favicon.svg                   # application icon, vector
-├── favicon.ico                   # 16/32/48/64 px fallback
-├── favicon-32x32.png             # 32 px fallback
-├── apple-touch-icon.png          # 180 px icon for iOS
 ├── README.md
 └── src/
     ├── index.js                  # builds the UI and wires everything together
@@ -133,7 +135,7 @@ memory-game/
     │   ├── createElement.js      # wrapper around document.createElement
     │   ├── shuffle.js            # Fisher–Yates shuffle
     │   └── storage.js            # localStorage leaderboard and preferences
-    └── assets/img/               # card images
+    └── assets/img/               # card images, app icon and screenshots
 ```
 
 ## Local setup
@@ -190,10 +192,14 @@ third-party libraries.
   `ARTIST=Patrick de Arteaga`, `DATE=2018`; the file also carries an internal
   `TITLE=VK_Creation7582` tag, which is the name the track was distributed under.
 - **Sound effects** — synthesised at runtime with the Web Audio API, no assets.
-- **Application icon** — the memory board in `favicon.svg`, drawn for this
-  project in the same palette as the interface (card back `#2f3542`, accent
-  `#ff4757`, highlight `#ffd166`). `favicon.ico`, `favicon-32x32.png` and
-  `apple-touch-icon.png` are generated from it as fallbacks.
+- **Application icon** — the memory board in `src/assets/img/favicon.svg`,
+  drawn for this project in the same palette as the interface (card back
+  `#2f3542`, accent `#ff4757`, highlight `#ffd166`). The `favicon.ico`,
+  `favicon-32x32.png` and `apple-touch-icon.png` files next to it are generated
+  from it as fallbacks.
+- **Screenshots** — `src/assets/img/screenshot-board.png` and
+  `src/assets/img/screenshot-preview.png`, captured from the running
+  application.
 
 ## Author
 
