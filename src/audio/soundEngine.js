@@ -1,14 +1,22 @@
-import { MUSIC_NOTE_SECONDS } from '../constants/config.js';
+import { MUSIC_NOTE_SECONDS, MUSIC_URL, MUSIC_VOLUME } from '../constants/config.js';
 
 /**
- * Every sound is synthesised with the Web Audio API, so the game needs no audio
- * files, no downloads and no third-party tracks.
+ * Audio for the game.
  *
- * Browsers only allow audio after a user gesture, so the context is created and
- * resumed lazily: `unlock()` is called on the first click or key press.
+ * The background track is a real audio file (`MUSIC_URL`) played in a loop
+ * through an <audio> element. If that file cannot be played — no Ogg Vorbis
+ * support, a missing file, a blocked autoplay attempt — the engine falls back
+ * to a melody synthesised with the Web Audio API, so the game is never silent
+ * by accident.
+ *
+ * The short sound effects are always synthesised, which keeps the repository
+ * free of extra assets.
+ *
+ * Browsers only allow audio after a user gesture, so nothing starts before the
+ * first click or key press: `unlock()` is called from there.
  */
 
-/** A calm A-minor pentatonic loop, in hertz. */
+/** Fallback melody: a calm A-minor pentatonic loop, in hertz. */
 const MELODY_HZ = [
     440.0, 523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25,
     440.0, 587.33, 659.25, 880.0, 783.99, 659.25, 587.33, 523.25,
@@ -19,7 +27,7 @@ const BASS_HZ = [110.0, 87.31, 130.81, 98.0];
 
 const LOOKAHEAD_INTERVAL_MS = 25;
 const SCHEDULE_AHEAD_SECONDS = 0.3;
-const MUSIC_GAIN = 0.05;
+const FALLBACK_MUSIC_GAIN = 0.05;
 const EFFECTS_GAIN = 0.14;
 
 function getAudioContextConstructor() {
@@ -32,20 +40,23 @@ function getAudioContextConstructor() {
     return null;
 }
 
-export function isSoundSupported() {
-    return getAudioContextConstructor() !== null;
-}
-
-export function createSoundEngine({ enabled = true } = {}) {
+export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {}) {
     let context = null;
     let masterGain = null;
-    let musicGain = null;
+    let fallbackMusicGain = null;
     let effectsGain = null;
+
+    let musicElement = null;
+    let useSynthFallback = false;
+
     let schedulerId = null;
     let nextNoteTime = 0;
     let step = 0;
+
     let isEnabled = Boolean(enabled);
     let isUnlocked = false;
+
+    /* ------------------------------------------------------------ web audio */
 
     function ensureGraph() {
         if (context) {
@@ -63,9 +74,9 @@ export function createSoundEngine({ enabled = true } = {}) {
         masterGain.gain.value = isEnabled ? 1 : 0;
         masterGain.connect(context.destination);
 
-        musicGain = context.createGain();
-        musicGain.gain.value = MUSIC_GAIN;
-        musicGain.connect(masterGain);
+        fallbackMusicGain = context.createGain();
+        fallbackMusicGain.gain.value = FALLBACK_MUSIC_GAIN;
+        fallbackMusicGain.connect(masterGain);
 
         effectsGain = context.createGain();
         effectsGain.gain.value = EFFECTS_GAIN;
@@ -109,16 +120,69 @@ export function createSoundEngine({ enabled = true } = {}) {
         oscillator.stop(startTime + duration + 0.02);
     }
 
-    /** True when an effect may play; also unlocks audio on the first gesture. */
-    function ready() {
-        if (!isEnabled || !ensureGraph()) {
-            return false;
+    /* ------------------------------------------------------- background track */
+
+    function ensureMusicElement() {
+        if (musicElement) {
+            return musicElement;
         }
-        if (!isUnlocked) {
-            unlock();
+
+        if (!musicUrl || typeof globalThis.Audio !== 'function') {
+            return null;
         }
-        return true;
+
+        musicElement = new globalThis.Audio();
+        musicElement.src = musicUrl;
+        musicElement.loop = true;
+        musicElement.preload = 'auto';
+        musicElement.volume = MUSIC_VOLUME;
+        musicElement.addEventListener('error', fallBackToSynth);
+
+        return musicElement;
     }
+
+    /** Used when the music file is missing or the format is not supported. */
+    function fallBackToSynth() {
+        if (useSynthFallback) {
+            return;
+        }
+
+        useSynthFallback = true;
+        startSynthMusic();
+    }
+
+    function startMusic() {
+        if (!isEnabled || !isUnlocked) {
+            return;
+        }
+
+        if (!useSynthFallback) {
+            const element = ensureMusicElement();
+
+            if (element) {
+                element.volume = MUSIC_VOLUME;
+
+                const started = element.play();
+                if (started && typeof started.catch === 'function') {
+                    started.catch(fallBackToSynth);
+                }
+                return;
+            }
+
+            useSynthFallback = true;
+        }
+
+        startSynthMusic();
+    }
+
+    function stopMusic() {
+        if (musicElement) {
+            musicElement.pause();
+        }
+        stopSynthMusic();
+    }
+
+    /* -------------------------------------------------- synthesised fallback */
 
     function scheduleStep(index, time) {
         playTone({
@@ -126,7 +190,7 @@ export function createSoundEngine({ enabled = true } = {}) {
             startTime: time,
             duration: MUSIC_NOTE_SECONDS * 0.9,
             type: 'triangle',
-            target: musicGain,
+            target: fallbackMusicGain,
             volume: 0.5,
         });
 
@@ -136,14 +200,24 @@ export function createSoundEngine({ enabled = true } = {}) {
                 startTime: time,
                 duration: MUSIC_NOTE_SECONDS * 3.4,
                 type: 'sine',
-                target: musicGain,
+                target: fallbackMusicGain,
                 volume: 0.7,
             });
         }
     }
 
+    function startSynthMusic() {
+        if (!isEnabled || !isUnlocked || schedulerId !== null || !ensureGraph()) {
+            return;
+        }
+
+        nextNoteTime = context.currentTime + 0.1;
+        schedulerQueue();
+        schedulerId = setInterval(schedulerQueue, LOOKAHEAD_INTERVAL_MS);
+    }
+
     /** Keeps roughly 0.3 s of music queued, which avoids interval jitter. */
-    function scheduler() {
+    function schedulerQueue() {
         if (!context) {
             return;
         }
@@ -155,32 +229,39 @@ export function createSoundEngine({ enabled = true } = {}) {
         }
     }
 
-    function startMusic() {
-        if (!isEnabled || !isUnlocked || schedulerId !== null || !ensureGraph()) {
-            return;
-        }
-
-        nextNoteTime = context.currentTime + 0.1;
-        scheduler();
-        schedulerId = setInterval(scheduler, LOOKAHEAD_INTERVAL_MS);
-    }
-
-    function stopMusic() {
+    function stopSynthMusic() {
         if (schedulerId !== null) {
             clearInterval(schedulerId);
             schedulerId = null;
         }
     }
 
-    /** Creates and resumes the audio context. Must run inside a user gesture. */
-    function unlock() {
+    /* --------------------------------------------------------------- control */
+
+    /** True when an effect may play; also unlocks audio on the first gesture. */
+    function ready() {
         if (!isEnabled || !ensureGraph()) {
+            return false;
+        }
+        if (!isUnlocked) {
+            unlock();
+        }
+        return true;
+    }
+
+    /**
+     * Creates and resumes the audio context and starts the background music.
+     * Must run inside a user gesture, otherwise the browser blocks the sound.
+     */
+    function unlock() {
+        if (!isEnabled) {
             return;
         }
 
+        ensureGraph();
         isUnlocked = true;
 
-        if (context.state === 'suspended') {
+        if (context && context.state === 'suspended') {
             context.resume();
         }
 
@@ -200,6 +281,8 @@ export function createSoundEngine({ enabled = true } = {}) {
             stopMusic();
         }
     }
+
+    /* --------------------------------------------------------------- effects */
 
     function playFlip() {
         if (!ready()) return;
@@ -248,13 +331,20 @@ export function createSoundEngine({ enabled = true } = {}) {
         });
     }
 
-    /** Stops the music and releases the audio context (used when tearing down). */
+    /** Stops the music and releases the audio resources. */
     function dispose() {
         stopMusic();
+
+        if (musicElement) {
+            musicElement.removeEventListener('error', fallBackToSynth);
+            musicElement = null;
+        }
+
         if (context) {
             context.close();
             context = null;
         }
+
         isUnlocked = false;
     }
 

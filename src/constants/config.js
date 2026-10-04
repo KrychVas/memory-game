@@ -31,5 +31,15 @@ export const CARD_PREVIEW_MS = 2500;
 /** Delay between neighbouring cards while the preview wave opens, in milliseconds. */
 export const CARD_PREVIEW_STAGGER_MS = 45;
 
-/** Background music note length in seconds. */
+/** Background music track that plays in a loop. */
+export const MUSIC_URL = './src/audio/Chiptronical.ogg';
+
+/** Background music volume; the sound effects are deliberately louder. */
+export const MUSIC_VOLUME = 0.35;
+
+/**
+ * Note length of the synthesised melody, in seconds. That melody is only used
+ * as a fallback when the music file cannot be played (for example in a browser
+ * without Ogg Vorbis support).
+ */
 export const MUSIC_NOTE_SECONDS = 0.26;
