@@ -1,7 +1,7 @@
 # Memory Game
 
 A memory (pairs matching) game built with plain HTML, CSS and JavaScript for the
-[RS School](https://rs.school/) "Memory Game" task. The player turns over cards,
+[RS School](https://github.com/rolling-scopes-school/tasks/tree/master/tasks/memory-game/) "Memory Game" task. The player turns over cards,
 remembers where each picture is and tries to find all 8 pairs in as few moves as
 possible. The best results are kept in `localStorage` and shown in a leaderboard.
 
@@ -65,27 +65,36 @@ is listed next to it.
   never creates duplicates.
 - Responsive layout and visible keyboard focus.
 
-## Audio and the start-of-game preview
+## Music and sound
 
-These two features are optional extras: the task explicitly says that sound and
-animations earn no points. They are implemented on top of the required rules and
-never change the scoring behaviour.
+Sound is an optional extra: the task explicitly says that sound and animations
+earn no points. It is layered on top of the required rules and never changes the
+scoring behaviour.
 
-**Music and sound effects.** `src/audio/soundEngine.js` synthesises everything
-with the Web Audio API, so there are no audio files to download and no
-third-party tracks or licences involved: a calm looping melody in the background
-plus short effects when a card is turned over, when a pair matches, when it does
-not, and a small fanfare on the win. The "Sound: on / Sound: off" button in the
-header switches the music and the effects, and the choice is remembered in
-`localStorage` under `memory-game:sound`.
+**Background music** is a real audio track, `src/audio/Chiptronical.ogg`, played
+in a loop and started on the first click or key press. Browsers block audio
+until the user interacts with the page, so nothing tries to autoplay on load.
+Its volume is `MUSIC_VOLUME` in `src/constants/config.js`.
 
-Because browsers block audio until the user interacts with the page, the audio
-context is created on the first click or key press; nothing tries to autoplay.
+**Sound effects** — turning a card over, a matching pair, a mismatching pair and
+a small fanfare on the win — are synthesised at runtime with the Web Audio API in
+`src/audio/soundEngine.js`, so no extra asset files are needed for them.
 
-**Start-of-game preview.** When a game starts, every card is revealed face up in
-a diagonal wave for `CARD_PREVIEW_MS`, then all cards turn back down and the
-board unlocks. Clicking during the preview does nothing, and pressing
-"New Game" cancels the preview immediately.
+**The switch** in the header ("Sound: on / Sound: off") mutes the music and the
+effects together and remembers the choice in `localStorage` under
+`memory-game:sound`.
+
+**Fallback.** Ogg Vorbis is not supported by every browser (Safari, for
+instance). If the file cannot be played, the engine notices and switches to a
+melody synthesised with the Web Audio API instead, so the game is never silent
+by accident. Setting `MUSIC_URL` to an empty string forces that fallback.
+
+## Start-of-game preview
+
+When a game starts, every card is revealed face up in a diagonal wave for
+`CARD_PREVIEW_MS`, then all cards turn back down and the board unlocks. Clicking
+during the preview does nothing, and pressing "New Game" cancels the preview
+immediately.
 
 > If you prefer the strictest reading of the rules — "on the first load the cards
 > lie face down" — set `CARD_PREVIEW_ENABLED` to `false` in
@@ -100,7 +109,8 @@ memory-game/
 └── src/
     ├── index.js                  # builds the UI and wires everything together
     ├── audio/
-    │   └── soundEngine.js        # synthesised music and sound effects
+    │   ├── soundEngine.js        # background track plus synthesised effects
+    │   └── Chiptronical.ogg      # background music (see Credits)
     ├── components/
     │   ├── board.js              # playing field and cards
     │   ├── header.js             # header buttons, including the sound switch
@@ -110,7 +120,7 @@ memory-game/
     │   └── winModal.js           # victory dialog content
     ├── constants/
     │   ├── cardsData.js          # the 8 pictures
-    │   └── config.js             # pairs count, delays, storage keys
+    │   └── config.js             # pairs count, delays, storage keys, music
     ├── game/
     │   └── createGame.js         # game state and rules
     ├── styles/
@@ -164,6 +174,18 @@ third-party libraries.
 5. Find all 8 pairs — the victory dialog shows how many moves it took.
 6. Use "New Game" in the header to reshuffle at any time, "Leaderboard" to see
    the best results, and the sound button to switch the music on or off.
+
+## Credits and assets
+
+- **Card artwork** — pixel-art characters drawn for this project, stored in
+  `src/assets/img/`.
+- **Background music** — "Chiptronical" by **Patrick de Arteaga**
+  (<https://patrickdearteaga.com/>), used under the
+  [Creative Commons Attribution (CC BY)](https://creativecommons.org/licenses/by/4.0/)
+  licence. Artist, title and date come from the tags embedded in the file:
+  `ARTIST=Patrick de Arteaga`, `DATE=2018`; the file also carries an internal
+  `TITLE=VK_Creation7582` tag, which is the name the track was distributed under.
+- **Sound effects** — synthesised at runtime with the Web Audio API, no assets.
 
 ## Author
 
