@@ -105,6 +105,10 @@ immediately.
 ```
 memory-game/
 ├── index.html                    # empty <body>, only the module script
+├── favicon.svg                   # application icon, vector
+├── favicon.ico                   # 16/32/48/64 px fallback
+├── favicon-32x32.png             # 32 px fallback
+├── apple-touch-icon.png          # 180 px icon for iOS
 ├── README.md
 └── src/
     ├── index.js                  # builds the UI and wires everything together
@@ -186,6 +190,10 @@ third-party libraries.
   `ARTIST=Patrick de Arteaga`, `DATE=2018`; the file also carries an internal
   `TITLE=VK_Creation7582` tag, which is the name the track was distributed under.
 - **Sound effects** — synthesised at runtime with the Web Audio API, no assets.
+- **Application icon** — the memory board in `favicon.svg`, drawn for this
+  project in the same palette as the interface (card back `#2f3542`, accent
+  `#ff4757`, highlight `#ffd166`). `favicon.ico`, `favicon-32x32.png` and
+  `apple-touch-icon.png` are generated from it as fallbacks.
 
 ## Author
 
