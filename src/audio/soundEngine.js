@@ -12,6 +12,9 @@ const SCHEDULE_AHEAD_SECONDS = 0.3;
 const FALLBACK_MUSIC_GAIN = 0.05;
 const EFFECTS_GAIN = 0.14;
 
+const MEDIA_ERR_ABORTED = 1;
+const MEDIA_ERR_NETWORK = 2;
+
 function getAudioContextConstructor() {
     if (typeof globalThis.AudioContext === 'function') {
         return globalThis.AudioContext;
@@ -112,18 +115,49 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         musicElement.loop = true;
         musicElement.preload = 'auto';
         musicElement.volume = MUSIC_VOLUME;
-        musicElement.addEventListener('error', fallBackToSynth);
+        musicElement.addEventListener('error', handleMediaError);
 
         return musicElement;
     }
 
-    function fallBackToSynth() {
+    function fallBackToSynth(reason) {
         if (useSynthFallback) {
             return;
         }
 
         useSynthFallback = true;
+        console.warn(
+            'The background music file could not be played, using the synthesised melody instead.',
+            reason,
+        );
         startSynthMusic();
+    }
+
+    function handleMediaError() {
+        const code = musicElement && musicElement.error ? musicElement.error.code : 0;
+
+        if (code === MEDIA_ERR_ABORTED || code === MEDIA_ERR_NETWORK) {
+            return;
+        }
+
+        fallBackToSynth(musicElement ? musicElement.error : null);
+    }
+
+    function handlePlayRejection(error) {
+        if (!error) {
+            return;
+        }
+
+        if (error.name === 'AbortError') {
+            return;
+        }
+
+        if (error.name === 'NotAllowedError') {
+            isUnlocked = false;
+            return;
+        }
+
+        fallBackToSynth(error);
     }
 
     function startMusic() {
@@ -139,7 +173,7 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
 
                 const started = element.play();
                 if (started && typeof started.catch === 'function') {
-                    started.catch(fallBackToSynth);
+                    started.catch(handlePlayRejection);
                 }
                 return;
             }
@@ -298,7 +332,7 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         stopMusic();
 
         if (musicElement) {
-            musicElement.removeEventListener('error', fallBackToSynth);
+            musicElement.removeEventListener('error', handleMediaError);
             musicElement = null;
         }
 
