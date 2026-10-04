@@ -5,12 +5,46 @@ A memory (pairs matching) game built with plain HTML, CSS and JavaScript for the
 remembers where each picture is and tries to find all 8 pairs in as few moves as
 possible. The best results are kept in `localStorage` and shown in a leaderboard.
 
+No libraries, no frameworks, no build step — only the browser platform.
+
 ## Live demo
 
 <https://krychvas.github.io/memory-game/>
 
 The application is a set of static files, so it is published with GitHub Pages
 directly from the `memory-game` branch.
+
+## How the task criteria are met
+
+Points are the ones from the task description; the implementation of each item
+is listed next to it.
+
+| Criterion | Points | Where it is implemented |
+| --- | --- | --- |
+| Markup generation | 15 | `index.html` has an empty `<body>` with only the `<script>` tag. Every element is created with `document.createElement`, wrapped by `src/utils/createElement.js`. |
+| Game start | 10 | `src/game/createGame.js` → `start()`, called on load from `src/index.js`. 16 cards in 8 pairs, all face down, counters at `0` and `0 / 8`, header buttons available. |
+| Shuffling | 5 | `src/utils/shuffle.js` implements Fisher–Yates; it runs on every load and every new game. |
+| Card selection | 15 | `handleCardSelect()`: the first card waits for the second, a matched pair stays open, and clicks on open, matched or already selected cards are ignored. |
+| Mismatched pairs | 10 | `handleMismatch()`: the pair flips back after `MISMATCH_DELAY_MS` (900 ms, inside the required 700–1500 ms range) while the board stays locked. The timer keeps running even when a dialog is open. |
+| Counters | 5 | `moves` grows when the second card of a turn is opened, `pairsFound` on every match; ignored clicks change nothing. Rendered by `src/components/scoreBoard.js`. |
+| Modal windows | 15 | `src/components/modal.js` is one shared shell used by both `winModal.js` and `leaderboardModal.js`: creation, opening and closing are written once. Dimmed backdrop, the page behind is inert, scrolling is locked, and a dialog closes with its button, a backdrop click or `Escape`. |
+| Leaderboard | 10 | `src/components/leaderboardModal.js` renders the top 10 (place, moves, date as `DD.MM.YYYY`) or an empty-state message. `src/utils/storage.js` keeps the list sorted by moves, then by the earlier game, and caps it at 10. |
+| New Game | 15 | Both the header button and the win dialog button call `startNewGame()`, which closes the dialogs and calls `game.start()`. `clearPendingTimers()` cancels a pending mismatch or preview timer, so a restart with an open mismatched pair is instant. |
+| README | 5 | This file: description of the app plus local setup instructions. |
+
+### Penalties — all avoided
+
+- The PR contains a deploy link, and the commits follow the RS School
+  conventional-commit convention.
+- Interface elements are created with `document.createElement` (or the
+  `createElement` helper); the source `<body>` holds nothing but `<script>`.
+- `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`,
+  `document.writeln`, `DOMParser` and `Range.createContextualFragment` are not
+  used anywhere — text is set with `textContent` and nodes are added with
+  `append`.
+- `alert`, `confirm` and `prompt` are not used; dialogs are native `<dialog>`
+  elements.
+- No third-party UI, DOM or game-logic library is used.
 
 ## Features
 
@@ -26,14 +60,36 @@ directly from the `memory-game` branch.
 - Leaderboard dialog with the top 10 results: place, moves and date in
   `DD.MM.YYYY` format. Results with fewer moves go first, ties are broken by the
   earlier game.
-- "New Game" restarts the game without reloading the page, cancels the pending
-  mismatch timer and closes the dialogs.
 - Results are stored in `localStorage`, so they survive a page reload and a
-  browser restart. An unfinished game is never saved.
-- Both dialogs share one modal component: darkened backdrop, closing with the
-  button, a click on the backdrop or the `Escape` key, locked page scrolling and
-  keyboard focus kept inside the dialog.
+  browser restart. An unfinished game is never saved, and opening the dialogs
+  never creates duplicates.
 - Responsive layout and visible keyboard focus.
+
+## Audio and the start-of-game preview
+
+These two features are optional extras: the task explicitly says that sound and
+animations earn no points. They are implemented on top of the required rules and
+never change the scoring behaviour.
+
+**Music and sound effects.** `src/audio/soundEngine.js` synthesises everything
+with the Web Audio API, so there are no audio files to download and no
+third-party tracks or licences involved: a calm looping melody in the background
+plus short effects when a card is turned over, when a pair matches, when it does
+not, and a small fanfare on the win. The "Sound: on / Sound: off" button in the
+header switches the music and the effects, and the choice is remembered in
+`localStorage` under `memory-game:sound`.
+
+Because browsers block audio until the user interacts with the page, the audio
+context is created on the first click or key press; nothing tries to autoplay.
+
+**Start-of-game preview.** When a game starts, every card is revealed face up in
+a diagonal wave for `CARD_PREVIEW_MS`, then all cards turn back down and the
+board unlocks. Clicking during the preview does nothing, and pressing
+"New Game" cancels the preview immediately.
+
+> If you prefer the strictest reading of the rules — "on the first load the cards
+> lie face down" — set `CARD_PREVIEW_ENABLED` to `false` in
+> `src/constants/config.js`. One line, no other change.
 
 ## Project structure
 
@@ -43,16 +99,18 @@ memory-game/
 ├── README.md
 └── src/
     ├── index.js                  # builds the UI and wires everything together
+    ├── audio/
+    │   └── soundEngine.js        # synthesised music and sound effects
     ├── components/
     │   ├── board.js              # playing field and cards
-    │   ├── header.js             # header with the two buttons
+    │   ├── header.js             # header buttons, including the sound switch
     │   ├── leaderboardModal.js   # leaderboard dialog content
     │   ├── modal.js              # shared modal shell (open / close / backdrop)
     │   ├── scoreBoard.js         # moves and pairs counters
     │   └── winModal.js           # victory dialog content
     ├── constants/
     │   ├── cardsData.js          # the 8 pictures
-    │   └── config.js             # pairs count, mismatch delay, storage key
+    │   └── config.js             # pairs count, delays, storage keys
     ├── game/
     │   └── createGame.js         # game state and rules
     ├── styles/
@@ -60,7 +118,7 @@ memory-game/
     ├── utils/
     │   ├── createElement.js      # wrapper around document.createElement
     │   ├── shuffle.js            # Fisher–Yates shuffle
-    │   └── storage.js            # localStorage leaderboard
+    │   └── storage.js            # localStorage leaderboard and preferences
     └── assets/img/               # card images
 ```
 
@@ -98,27 +156,14 @@ third-party libraries.
 
 ## How to play
 
-1. The board starts face down.
-2. Click a card to turn it over, then click a second one.
+1. When a game starts, all cards are shown face up for a moment — remember them.
+2. The cards turn back down and you can play: click a card to turn it over, then
+   click a second one.
 3. If the pictures match, both cards stay open and the pairs counter grows.
 4. If they do not match, both cards are shown for a moment and then turn back.
 5. Find all 8 pairs — the victory dialog shows how many moves it took.
-6. Use "New Game" in the header to reshuffle at any time, and "Leaderboard" to
-   see the best results.
-
-## Implementation notes
-
-The task has strict constraints, and the code follows them:
-
-- `<body>` in `index.html` contains nothing but the `<script>` tag; every
-  element is created in JavaScript, through `document.createElement` or the
-  `createElement` helper in `src/utils/createElement.js`.
-- `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`,
-  `DOMParser` and `Range.createContextualFragment` are not used anywhere —
-  text is set with `textContent` and nodes are added with `append`.
-- `alert`, `confirm` and `prompt` are not used; dialogs are built on the native
-  `<dialog>` element.
-- No UI or game-logic libraries or frameworks: only vanilla JavaScript and CSS.
+6. Use "New Game" in the header to reshuffle at any time, "Leaderboard" to see
+   the best results, and the sound button to switch the music on or off.
 
 ## Author
 
