@@ -66,10 +66,10 @@ export function formatDate(value) {
 
 export function loadSoundEnabled() {
     try {
-        return localStorage.getItem(SOUND_STORAGE_KEY) !== 'off';
+        return localStorage.getItem(SOUND_STORAGE_KEY) === 'on';
     } catch (error) {
         console.warn('Sound preference could not be read:', error);
-        return true;
+        return false;
     }
 }
 

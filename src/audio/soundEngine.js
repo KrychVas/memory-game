@@ -25,7 +25,7 @@ function getAudioContextConstructor() {
     return null;
 }
 
-export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {}) {
+export function createSoundEngine({ enabled = false, musicUrl = MUSIC_URL } = {}) {
     let context = null;
     let masterGain = null;
     let fallbackMusicGain = null;

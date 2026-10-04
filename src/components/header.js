@@ -4,7 +4,7 @@ export function createHeader({
     onNewGame,
     onShowLeaderboard,
     onToggleSound,
-    soundEnabled = true,
+    soundEnabled = false,
 }) {
     const element = createElement('header', 'header');
 
