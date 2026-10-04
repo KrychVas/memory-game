@@ -8,17 +8,6 @@ import {
 } from '../constants/config.js';
 import { saveResult } from '../utils/storage.js';
 
-/**
- * The game rules and the state they depend on.
- *
- * A turn is two different available cards. The second card always counts as a
- * move. A matching pair stays open, a mismatching one is closed again after
- * MISMATCH_DELAY_MS, and until then the board is locked.
- *
- * When a game starts, the cards are briefly revealed in a diagonal wave so the
- * player can memorise the layout; that preview is skipped if CARD_PREVIEW_ENABLED
- * is false, and its timer is cancelled by a restart just like the mismatch one.
- */
 export function createGame({ board, scoreBoard, onWin, sound = {} }) {
     let moves = 0;
     let pairsFound = 0;
@@ -33,7 +22,6 @@ export function createGame({ board, scoreBoard, onWin, sound = {} }) {
         scoreBoard.update(moves, pairsFound);
     }
 
-    /** Ends the current turn and makes the board clickable again. */
     function resetTurn() {
         firstCard = null;
         secondCard = null;
@@ -51,7 +39,6 @@ export function createGame({ board, scoreBoard, onWin, sound = {} }) {
         }
     }
 
-    /** Shows every card face up for a moment, then turns them all back down. */
     function startPreview(cards) {
         if (!CARD_PREVIEW_ENABLED || cards.length === 0) {
             return;
@@ -77,7 +64,6 @@ export function createGame({ board, scoreBoard, onWin, sound = {} }) {
         isGameOver = true;
         isBoardLocked = true;
 
-        // Saved once per win: the dialog may be opened and closed many times.
         const results = saveResult(moves);
 
         sound.playWin?.();
@@ -119,7 +105,6 @@ export function createGame({ board, scoreBoard, onWin, sound = {} }) {
             return;
         }
 
-        // Repeated clicks on an open, matched or already chosen card do nothing.
         if (card === firstCard || card.classList.contains('flipped') || card.classList.contains('matched')) {
             return;
         }
@@ -143,11 +128,6 @@ export function createGame({ board, scoreBoard, onWin, sound = {} }) {
         }
     }
 
-    /**
-     * Starts a game, or restarts one without reloading the page: any pending
-     * mismatch or preview timer is cancelled first, so an open mismatched pair
-     * can never interfere with the new board.
-     */
     function start() {
         clearPendingTimers();
 
@@ -159,9 +139,6 @@ export function createGame({ board, scoreBoard, onWin, sound = {} }) {
         const cards = board.render(handleCardSelect);
         updateScoreBoard();
 
-        // Reading a layout property forces the browser to record the face-down
-        // state of the freshly added cards. Without it the preview flip would be
-        // applied instantly instead of being animated.
         void board.element.offsetWidth;
 
         startPreview(cards);

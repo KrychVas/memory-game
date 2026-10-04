@@ -36,10 +36,6 @@ function createCard(item, index, onSelect) {
     return card;
 }
 
-/**
- * The playing field. `render` rebuilds a freshly shuffled deck, so every new
- * game gets brand-new card elements with no leftover state or listeners.
- */
 export function createBoard() {
     const element = createElement('div', 'game-board');
 

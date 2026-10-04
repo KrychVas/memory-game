@@ -1,28 +1,10 @@
 import { MUSIC_NOTE_SECONDS, MUSIC_URL, MUSIC_VOLUME } from '../constants/config.js';
 
-/**
- * Audio for the game.
- *
- * The background track is a real audio file (`MUSIC_URL`) played in a loop
- * through an <audio> element. If that file cannot be played — no Ogg Vorbis
- * support, a missing file, a blocked autoplay attempt — the engine falls back
- * to a melody synthesised with the Web Audio API, so the game is never silent
- * by accident.
- *
- * The short sound effects are always synthesised, which keeps the repository
- * free of extra assets.
- *
- * Browsers only allow audio after a user gesture, so nothing starts before the
- * first click or key press: `unlock()` is called from there.
- */
-
-/** Fallback melody: a calm A-minor pentatonic loop, in hertz. */
 const MELODY_HZ = [
     440.0, 523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25,
     440.0, 587.33, 659.25, 880.0, 783.99, 659.25, 587.33, 523.25,
 ];
 
-/** One bass note every four melody steps: A2, F2, C3, G2. */
 const BASS_HZ = [110.0, 87.31, 130.81, 98.0];
 
 const LOOKAHEAD_INTERVAL_MS = 25;
@@ -56,8 +38,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
     let isEnabled = Boolean(enabled);
     let isUnlocked = false;
 
-    /* ------------------------------------------------------------ web audio */
-
     function ensureGraph() {
         if (context) {
             return true;
@@ -85,7 +65,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         return true;
     }
 
-    /** Schedules one short tone; every effect below is built from these. */
     function playTone({
         frequency,
         startTime,
@@ -108,7 +87,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
             oscillator.frequency.exponentialRampToValueAtTime(endFrequency, startTime + duration);
         }
 
-        // Exponential ramps cannot reach zero, hence the tiny floor value.
         envelope.gain.setValueAtTime(0.0001, startTime);
         envelope.gain.exponentialRampToValueAtTime(volume, startTime + 0.015);
         envelope.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
@@ -119,8 +97,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         oscillator.start(startTime);
         oscillator.stop(startTime + duration + 0.02);
     }
-
-    /* ------------------------------------------------------- background track */
 
     function ensureMusicElement() {
         if (musicElement) {
@@ -141,7 +117,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         return musicElement;
     }
 
-    /** Used when the music file is missing or the format is not supported. */
     function fallBackToSynth() {
         if (useSynthFallback) {
             return;
@@ -182,8 +157,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         stopSynthMusic();
     }
 
-    /* -------------------------------------------------- synthesised fallback */
-
     function scheduleStep(index, time) {
         playTone({
             frequency: MELODY_HZ[index % MELODY_HZ.length],
@@ -216,7 +189,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         schedulerId = setInterval(schedulerQueue, LOOKAHEAD_INTERVAL_MS);
     }
 
-    /** Keeps roughly 0.3 s of music queued, which avoids interval jitter. */
     function schedulerQueue() {
         if (!context) {
             return;
@@ -236,9 +208,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         }
     }
 
-    /* --------------------------------------------------------------- control */
-
-    /** True when an effect may play; also unlocks audio on the first gesture. */
     function ready() {
         if (!isEnabled || !ensureGraph()) {
             return false;
@@ -249,10 +218,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         return true;
     }
 
-    /**
-     * Creates and resumes the audio context and starts the background music.
-     * Must run inside a user gesture, otherwise the browser blocks the sound.
-     */
     function unlock() {
         if (!isEnabled) {
             return;
@@ -281,8 +246,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
             stopMusic();
         }
     }
-
-    /* --------------------------------------------------------------- effects */
 
     function playFlip() {
         if (!ready()) return;
@@ -331,7 +294,6 @@ export function createSoundEngine({ enabled = true, musicUrl = MUSIC_URL } = {})
         });
     }
 
-    /** Stops the music and releases the audio resources. */
     function dispose() {
         stopMusic();
 

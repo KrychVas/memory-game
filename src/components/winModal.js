@@ -1,10 +1,6 @@
 import { createElement } from '../utils/createElement.js';
 import { createModal } from './modal.js';
 
-/**
- * Victory dialog. It shows the result of the finished game and offers to
- * restart or to just close the dialog and keep the final board on screen.
- */
 export function createWinModal({ onNewGame }) {
     const modal = createModal({ title: 'You won!', className: 'modal--win' });
 

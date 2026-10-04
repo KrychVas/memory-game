@@ -11,7 +11,6 @@ function createScoreItem(label, initialValue) {
     return { item, valueEl };
 }
 
-/** Moves counter and found-pairs counter shown above the board. */
 export function createScoreBoard() {
     const element = createElement('div', 'score-board', { 'aria-live': 'polite' });
 

@@ -1,6 +1,5 @@
 import { createElement } from '../utils/createElement.js';
 
-/** Every modal that is currently open; used for scroll lock and bulk closing. */
 const openModals = new Set();
 
 let modalCounter = 0;
@@ -9,20 +8,10 @@ function syncScrollLock() {
     document.body.classList.toggle('modal-open', openModals.size > 0);
 }
 
-/** Closes every open modal, e.g. before a new game starts. */
 export function closeAllModals() {
     [...openModals].forEach((modal) => modal.close());
 }
 
-/**
- * Builds the shared modal shell: darkened backdrop, title, body and footer.
- * Only the content is modal-specific, so creation, opening and closing are
- * written once and reused by every dialog in the app.
- *
- * Closing works with the Close button (wired by the caller), a click on the
- * backdrop and the Escape key, which the native <dialog> handles for us.
- * The page behind the modal is inert while it is open, and scrolling is locked.
- */
 export function createModal({ title = '', className = '' } = {}) {
     modalCounter += 1;
     const titleId = `modal-title-${modalCounter}`;
@@ -54,8 +43,6 @@ export function createModal({ title = '', className = '' } = {}) {
         }
     };
 
-    // A click on the backdrop targets the dialog element itself; a click on the
-    // window content targets one of its children and therefore keeps it open.
     dialog.addEventListener('click', (event) => {
         if (event.target === dialog) {
             close();

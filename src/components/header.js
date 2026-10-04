@@ -1,10 +1,5 @@
 import { createElement } from '../utils/createElement.js';
 
-/**
- * Application header. It holds the two buttons the task requires — New Game and
- * Leaderboard — plus an optional sound switch. All of them stay usable during
- * the game and after a win.
- */
 export function createHeader({
     onNewGame,
     onShowLeaderboard,

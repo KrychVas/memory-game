@@ -29,7 +29,6 @@ body {
     justify-content: center;
 }
 
-/* Keeps the page from scrolling while a modal is open. */
 body.modal-open {
     overflow: hidden;
 }
@@ -41,8 +40,6 @@ body.modal-open {
     gap: 20px;
     width: min(92vw, 520px);
 }
-
-/* Header ---------------------------------------------------------------- */
 
 .header {
     display: flex;
@@ -65,12 +62,9 @@ body.modal-open {
     gap: 10px;
 }
 
-/* Keeps the header from twitching when the sound label changes length. */
 .header__btn--sound {
     min-width: 118px;
 }
-
-/* Buttons --------------------------------------------------------------- */
 
 .btn {
     padding: 10px 18px;
@@ -107,8 +101,6 @@ body.modal-open {
     background-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Score board ----------------------------------------------------------- */
-
 .score-board {
     display: flex;
     flex-wrap: wrap;
@@ -136,8 +128,6 @@ body.modal-open {
     font-weight: 700;
     color: var(--color-highlight);
 }
-
-/* Board ----------------------------------------------------------------- */
 
 .game-board {
     display: grid;
@@ -178,8 +168,6 @@ body.modal-open {
     transform: rotateY(180deg);
 }
 
-/* Start-of-game preview: every card flips face up in a diagonal wave.
-   The delay is set per card from JavaScript through --preview-delay. */
 .card.preview {
     cursor: default;
 }
@@ -224,8 +212,6 @@ body.modal-open {
 .card.matched .card-front {
     box-shadow: inset 0 0 0 3px var(--color-highlight);
 }
-
-/* Modals ---------------------------------------------------------------- */
 
 .modal {
     width: 100%;
@@ -287,8 +273,6 @@ body.modal-open {
     gap: 12px;
 }
 
-/* Leaderboard ----------------------------------------------------------- */
-
 .leaderboard {
     width: 100%;
     border-collapse: collapse;
@@ -319,8 +303,6 @@ body.modal-open {
     font-weight: 700;
     color: var(--color-highlight);
 }
-
-/* Small screens --------------------------------------------------------- */
 
 @media (max-width: 420px) {
     .header {

@@ -1,9 +1,5 @@
 import { MAX_RESULTS, SOUND_STORAGE_KEY, STORAGE_KEY } from '../constants/config.js';
 
-/**
- * Keeps only entries that look like a finished game, so a corrupted or
- * hand-edited localStorage value can never break the leaderboard.
- */
 function isValidResult(result) {
     return (
         typeof result === 'object' &&
@@ -14,7 +10,6 @@ function isValidResult(result) {
     );
 }
 
-/** Fewer moves first; on a tie the earlier game wins. */
 function compareResults(a, b) {
     if (a.moves !== b.moves) {
         return a.moves - b.moves;
@@ -22,7 +17,6 @@ function compareResults(a, b) {
     return new Date(a.date) - new Date(b.date);
 }
 
-/** Reads the saved results, best first, at most MAX_RESULTS entries. */
 export function loadResults() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -40,16 +34,11 @@ export function loadResults() {
             .sort(compareResults)
             .slice(0, MAX_RESULTS);
     } catch (error) {
-        // Private mode or a broken value: play on with an empty leaderboard.
         console.warn('Leaderboard could not be read:', error);
         return [];
     }
 }
 
-/**
- * Adds one finished game to the leaderboard and returns the updated top list.
- * Called exactly once per win, so no duplicate entries are created.
- */
 export function saveResult(moves) {
     const results = [...loadResults(), { moves, date: new Date().toISOString() }];
     const best = results.sort(compareResults).slice(0, MAX_RESULTS);
@@ -63,7 +52,6 @@ export function saveResult(moves) {
     return best;
 }
 
-/** Formats a stored date as DD.MM.YYYY without the time part. */
 export function formatDate(value) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) {
@@ -76,7 +64,6 @@ export function formatDate(value) {
     return `${day}.${month}.${date.getFullYear()}`;
 }
 
-/** Sound is on unless the player switched it off. */
 export function loadSoundEnabled() {
     try {
         return localStorage.getItem(SOUND_STORAGE_KEY) !== 'off';

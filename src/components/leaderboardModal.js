@@ -30,10 +30,6 @@ function createLeaderboardTable(results) {
     return table;
 }
 
-/**
- * Leaderboard dialog. The list is rebuilt from localStorage on every open,
- * so it always shows the current top results; the game behind it is untouched.
- */
 export function createLeaderboardModal() {
     const modal = createModal({ title: 'Leaderboard', className: 'modal--leaderboard' });
 
