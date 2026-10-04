@@ -1,4 +1,4 @@
-import { MAX_RESULTS, STORAGE_KEY } from '../constants/config.js';
+import { MAX_RESULTS, SOUND_STORAGE_KEY, STORAGE_KEY } from '../constants/config.js';
 
 /**
  * Keeps only entries that look like a finished game, so a corrupted or
@@ -74,4 +74,22 @@ export function formatDate(value) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
 
     return `${day}.${month}.${date.getFullYear()}`;
+}
+
+/** Sound is on unless the player switched it off. */
+export function loadSoundEnabled() {
+    try {
+        return localStorage.getItem(SOUND_STORAGE_KEY) !== 'off';
+    } catch (error) {
+        console.warn('Sound preference could not be read:', error);
+        return true;
+    }
+}
+
+export function saveSoundEnabled(enabled) {
+    try {
+        localStorage.setItem(SOUND_STORAGE_KEY, enabled ? 'on' : 'off');
+    } catch (error) {
+        console.warn('Sound preference could not be saved:', error);
+    }
 }
