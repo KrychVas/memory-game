@@ -1,4 +1,11 @@
-import { MISMATCH_DELAY_MS, TOTAL_PAIRS } from '../constants/config.js';
+import {
+    BOARD_COLUMNS,
+    CARD_PREVIEW_ENABLED,
+    CARD_PREVIEW_MS,
+    CARD_PREVIEW_STAGGER_MS,
+    MISMATCH_DELAY_MS,
+    TOTAL_PAIRS,
+} from '../constants/config.js';
 import { saveResult } from '../utils/storage.js';
 
 /**
@@ -7,8 +14,12 @@ import { saveResult } from '../utils/storage.js';
  * A turn is two different available cards. The second card always counts as a
  * move. A matching pair stays open, a mismatching one is closed again after
  * MISMATCH_DELAY_MS, and until then the board is locked.
+ *
+ * When a game starts, the cards are briefly revealed in a diagonal wave so the
+ * player can memorise the layout; that preview is skipped if CARD_PREVIEW_ENABLED
+ * is false, and its timer is cancelled by a restart just like the mismatch one.
  */
-export function createGame({ board, scoreBoard, onWin }) {
+export function createGame({ board, scoreBoard, onWin, sound = {} }) {
     let moves = 0;
     let pairsFound = 0;
     let firstCard = null;
@@ -16,6 +27,7 @@ export function createGame({ board, scoreBoard, onWin }) {
     let isBoardLocked = false;
     let isGameOver = false;
     let mismatchTimerId = null;
+    let previewTimerId = null;
 
     function updateScoreBoard() {
         scoreBoard.update(moves, pairsFound);
@@ -28,11 +40,37 @@ export function createGame({ board, scoreBoard, onWin }) {
         isBoardLocked = false;
     }
 
-    function clearMismatchTimer() {
+    function clearPendingTimers() {
         if (mismatchTimerId !== null) {
             clearTimeout(mismatchTimerId);
             mismatchTimerId = null;
         }
+        if (previewTimerId !== null) {
+            clearTimeout(previewTimerId);
+            previewTimerId = null;
+        }
+    }
+
+    /** Shows every card face up for a moment, then turns them all back down. */
+    function startPreview(cards) {
+        if (!CARD_PREVIEW_ENABLED || cards.length === 0) {
+            return;
+        }
+
+        isBoardLocked = true;
+
+        cards.forEach((card, index) => {
+            const row = Math.floor(index / BOARD_COLUMNS);
+            const column = index % BOARD_COLUMNS;
+            card.style.setProperty('--preview-delay', `${(row + column) * CARD_PREVIEW_STAGGER_MS}ms`);
+            card.classList.add('preview');
+        });
+
+        previewTimerId = setTimeout(() => {
+            previewTimerId = null;
+            cards.forEach((card) => card.classList.remove('preview'));
+            resetTurn();
+        }, CARD_PREVIEW_MS);
     }
 
     function finishGame() {
@@ -42,6 +80,7 @@ export function createGame({ board, scoreBoard, onWin }) {
         // Saved once per win: the dialog may be opened and closed many times.
         const results = saveResult(moves);
 
+        sound.playWin?.();
         onWin({ moves, results });
     }
 
@@ -55,11 +94,15 @@ export function createGame({ board, scoreBoard, onWin }) {
 
         if (pairsFound === TOTAL_PAIRS) {
             finishGame();
+            return;
         }
+
+        sound.playMatch?.();
     }
 
     function handleMismatch() {
         isBoardLocked = true;
+        sound.playMismatch?.();
 
         mismatchTimerId = setTimeout(() => {
             mismatchTimerId = null;
@@ -82,6 +125,7 @@ export function createGame({ board, scoreBoard, onWin }) {
         }
 
         card.classList.add('flipped');
+        sound.playFlip?.();
 
         if (firstCard === null) {
             firstCard = card;
@@ -101,19 +145,26 @@ export function createGame({ board, scoreBoard, onWin }) {
 
     /**
      * Starts a game, or restarts one without reloading the page: any pending
-     * mismatch timer is cancelled first, so an open mismatched pair can never
-     * interfere with the new board.
+     * mismatch or preview timer is cancelled first, so an open mismatched pair
+     * can never interfere with the new board.
      */
     function start() {
-        clearMismatchTimer();
+        clearPendingTimers();
 
         moves = 0;
         pairsFound = 0;
         isGameOver = false;
         resetTurn();
 
-        board.render(handleCardSelect);
+        const cards = board.render(handleCardSelect);
         updateScoreBoard();
+
+        // Reading a layout property forces the browser to record the face-down
+        // state of the freshly added cards. Without it the preview flip would be
+        // applied instantly instead of being animated.
+        void board.element.offsetWidth;
+
+        startPreview(cards);
     }
 
     return { start };

@@ -61,7 +61,13 @@ body.modal-open {
 
 .header__actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
+}
+
+/* Keeps the header from twitching when the sound label changes length. */
+.header__btn--sound {
+    min-width: 118px;
 }
 
 /* Buttons --------------------------------------------------------------- */
@@ -170,6 +176,17 @@ body.modal-open {
 .card.flipped .card-inner,
 .card.matched .card-inner {
     transform: rotateY(180deg);
+}
+
+/* Start-of-game preview: every card flips face up in a diagonal wave.
+   The delay is set per card from JavaScript through --preview-delay. */
+.card.preview {
+    cursor: default;
+}
+
+.card.preview .card-inner {
+    transform: rotateY(180deg);
+    transition-delay: var(--preview-delay, 0ms);
 }
 
 .card-back,
@@ -309,6 +326,10 @@ body.modal-open {
     .header {
         justify-content: center;
         text-align: center;
+    }
+
+    .header__actions {
+        justify-content: center;
     }
 
     .game-board {
