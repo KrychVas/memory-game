@@ -78,9 +78,10 @@ earn no points. It is layered on top of the required rules and never changes the
 scoring behaviour.
 
 **Background music** is a real audio track, `src/audio/Chiptronical.ogg`, played
-in a loop and started on the first click or key press. Browsers block audio
-until the user interacts with the page, so nothing tries to autoplay on load.
-Its volume is `MUSIC_VOLUME` in `src/constants/config.js`.
+in a loop once the player switches the sound on. Browsers block audio until the
+user interacts with the page, and that switch click is exactly the interaction
+they need, so nothing tries to autoplay on load. Its volume is `MUSIC_VOLUME` in
+`src/constants/config.js`.
 
 **Sound effects** — turning a card over, a matching pair, a mismatching pair and
 a small fanfare on the win — are synthesised at runtime with the Web Audio API in
@@ -88,7 +89,8 @@ a small fanfare on the win — are synthesised at runtime with the Web Audio API
 
 **The switch** in the header ("Sound: on / Sound: off") mutes the music and the
 effects together and remembers the choice in `localStorage` under
-`memory-game:sound`.
+`memory-game:sound`. On a first visit the game starts with the sound **off**, so
+nothing plays until the player asks for it.
 
 **Fallback.** Ogg Vorbis is not supported by every browser (Safari, for
 instance). If the file cannot be played, the engine notices and switches to a
