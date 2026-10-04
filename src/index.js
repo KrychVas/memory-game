@@ -1,137 +1,48 @@
 import { createElement } from './utils/createElement.js';
-import { shuffleArray } from './utils/shuffle.js';
-import { CARD_ITEMS } from './constants/cardsData.js';
+import { createHeader } from './components/header.js';
+import { createScoreBoard } from './components/scoreBoard.js';
+import { createBoard } from './components/board.js';
+import { createWinModal } from './components/winModal.js';
+import { createLeaderboardModal } from './components/leaderboardModal.js';
+import { closeAllModals } from './components/modal.js';
+import { createGame } from './game/createGame.js';
 
 function initApp() {
-    const root = document.body;
-
     const appContainer = createElement('div', 'app-container');
 
-    const header = createElement('header', 'header');
-    const newGameBtn = createElement('button', 'btn new-game-btn', { 'aria-label': 'New Game' }, 'New Game');
-    const leaderboardBtn = createElement('button', 'btn leaderboard-btn', { 'aria-label': 'Leaderboard' }, 'Leaderboard');
-    header.append(newGameBtn, leaderboardBtn);
+    const header = createHeader({ onNewGame: startNewGame, onShowLeaderboard: showLeaderboard });
+    const scoreBoard = createScoreBoard();
+    const board = createBoard();
 
-    const scoreBoard = createElement('div', 'score-board');
-    const gameBoard = createElement('div', 'game-board');
+    const game = createGame({ board, scoreBoard, onWin: handleWin });
 
-    appContainer.append(header, scoreBoard, gameBoard);
-    root.append(appContainer);
+    const winModal = createWinModal({ onNewGame: startNewGame });
+    const leaderboardModal = createLeaderboardModal();
 
-    // Ігровий стан
-    let moves = 0;
-    let pairsFound = 0;
-    let hasFlippedCard = false;
-    let lockBoard = false;
-    let firstCard = null;
-    let secondCard = null;
+    appContainer.append(
+        header.element,
+        scoreBoard.element,
+        board.element,
+        winModal.element,
+        leaderboardModal.element,
+    );
 
-    function updateScoreBoard() {
-        scoreBoard.textContent = `Moves: ${moves} | Pairs: ${pairsFound} / 8`;
+    document.body.append(appContainer);
+
+    function startNewGame() {
+        closeAllModals();
+        game.start();
     }
 
-    function startGame() {
-        gameBoard.textContent = '';
-        moves = 0;
-        pairsFound = 0;
-        hasFlippedCard = false;
-        lockBoard = false;
-        firstCard = null;
-        secondCard = null;
-        updateScoreBoard();
-
-        const duplicatedCards = [...CARD_ITEMS, ...CARD_ITEMS];
-        const randomizedCards = shuffleArray(duplicatedCards);
-
-        randomizedCards.forEach((item, index) => {
-            const card = createElement('div', 'card', { 
-                'data-id': item.id, 
-                'data-index': index 
-            });
-            
-            const cardInner = createElement('div', 'card-inner');
-            const cardBack = createElement('div', 'card-back', {}, '❓');
-            
-            const img = createElement('img', 'card-img', { src: item.img, alt: item.name });
-            const cardFront = createElement('div', 'card-front');
-            cardFront.append(img);
-
-            cardInner.append(cardBack, cardFront);
-            card.append(cardInner);
-
-            card.addEventListener('click', () => flipCard(card));
-
-            gameBoard.append(card);
-        });
-
-        console.log('Game started, logic active!');
+    function showLeaderboard() {
+        leaderboardModal.open();
     }
 
-    function flipCard(card) {
-        if (lockBoard) return;
-        if (card === firstCard) return; 
-        if (card.classList.contains('matched') || card.classList.contains('flipped')) return;
-
-        card.classList.add('flipped');
-
-        if (!hasFlippedCard) {
-            hasFlippedCard = true;
-            firstCard = card;
-            return;
-        }
-
-        secondCard = card;
-        moves++;
-        updateScoreBoard();
-
-        checkForMatch();
+    function handleWin({ moves }) {
+        winModal.open(moves);
     }
 
-    function checkForMatch() {
-        const isMatch = firstCard.dataset.id === secondCard.dataset.id;
-
-        if (isMatch) {
-            disableCards();
-        } else {
-            unflipCards();
-        }
-    }
-
-    function disableCards() {
-        firstCard.classList.add('matched');
-        secondCard.classList.add('matched');
-
-        pairsFound++;
-        updateScoreBoard();
-
-        resetBoard();
-
-        if (pairsFound === 8) {
-            setTimeout(() => {
-                alert(`🎉 Congratulations! You won in ${moves} moves!`);
-            }, 300);
-        }
-    }
-
-    function unflipCards() {
-        lockBoard = true;
-
-        setTimeout(() => {
-            firstCard.classList.remove('flipped');
-            secondCard.classList.remove('flipped');
-            resetBoard();
-        }, 900);
-    }
-
-    function resetBoard() {
-        [hasFlippedCard, lockBoard] = [false, false];
-        [firstCard, secondCard] = [null, null];
-    }
-
-    // Кнопка нової гри
-    newGameBtn.addEventListener('click', startGame);
-
-    startGame();
+    game.start();
 }
 
 initApp();
